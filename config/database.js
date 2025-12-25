@@ -2,16 +2,24 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const dbPath = path.join(__dirname, '../database/app.db');
+// 🔹 Directorio de la DB (PRODUCCIÓN SAFE)
+const dbDir = path.join(__dirname, '../database');
+const dbPath = path.join(dbDir, 'app.db');
 
-// Crear DB si no existe
+// 🔹 Crear carpeta si no existe (CLAVE)
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
+// 🔹 Crear archivo DB si no existe
 if (!fs.existsSync(dbPath)) {
   fs.writeFileSync(dbPath, '');
 }
 
+// 🔹 Abrir base de datos
 const db = new Database(dbPath);
 
-// Ejecutar init.sql
+// 🔹 Ejecutar init.sql
 const initSQL = fs.readFileSync(
   path.join(__dirname, '../database/init.sql'),
   'utf8'
