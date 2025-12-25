@@ -6,6 +6,12 @@ const fs = require('fs');
 const dbDir = path.join(__dirname, '../database');
 const dbPath = path.join(dbDir, 'app.db');
 
+// 🧨 RESET TEMPORAL DE DB (SOLO UNA VEZ)
+if (process.env.RESET_DB === 'true' && fs.existsSync(dbPath)) {
+  fs.unlinkSync(dbPath);
+  console.log('🧨 Base de datos eliminada por RESET_DB');
+}
+
 // 🔹 Crear carpeta si no existe (CLAVE)
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
