@@ -1,17 +1,20 @@
-const { google } = require('googleapis');
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+import { google } from 'googleapis';
 
-// Alcances de Google Calendar
-const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+if (
+  !process.env.GOOGLE_PROJECT_ID ||
+  !process.env.GOOGLE_CLIENT_EMAIL ||
+  !process.env.GOOGLE_PRIVATE_KEY
+) {
+  throw new Error('❌ Faltan variables de entorno de Google');
+}
 
-// Autenticación con Service Account
-const auth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
-  scopes: SCOPES,
+const auth = new google.auth.JWT({
+  email: process.env.GOOGLE_CLIENT_EMAIL,
+  key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  scopes: ['https://www.googleapis.com/auth/calendar'],
 });
 
-// Cliente de Google Calendar
-const calendar = google.calendar({
+export const calendar = google.calendar({
   version: 'v3',
   auth,
 });
