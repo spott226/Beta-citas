@@ -19,10 +19,16 @@ app.use(express.json());
 const session = require('express-session');
 const requireAdmin = require('./middlewares/requireAdmin');
 
+app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    sameSite: 'lax'
+  }
 }));
 
 // 🔹 Servir frontend público
