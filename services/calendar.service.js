@@ -3,10 +3,13 @@ const { google } = require('googleapis');
 if (
   !process.env.GOOGLE_PROJECT_ID ||
   !process.env.GOOGLE_CLIENT_EMAIL ||
-  !process.env.GOOGLE_PRIVATE_KEY
+  !process.env.GOOGLE_PRIVATE_KEY ||
+  !process.env.GOOGLE_CALENDAR_ID
 ) {
   throw new Error('❌ Faltan variables de entorno de Google');
 }
+
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
 
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
@@ -19,8 +22,6 @@ const calendar = google.calendar({
   version: 'v3',
   auth,
 });
-
-module.exports = { calendar };
 
 // ======================================================
 // 📅 CREAR EVENTO
@@ -46,7 +47,7 @@ async function createEvent({ summary, description, start, end }) {
 }
 
 // ======================================================
-// ❌ ELIMINAR EVENTO (CANCELAR CITA)
+// ❌ ELIMINAR EVENTO
 // ======================================================
 async function deleteEvent(eventId) {
   await calendar.events.delete({
@@ -56,10 +57,10 @@ async function deleteEvent(eventId) {
 }
 
 // ======================================================
-// 🔁 ACTUALIZAR EVENTO (REAGENDAR CITA)
+// 🔁 ACTUALIZAR EVENTO
 // ======================================================
 async function updateEvent(eventId, start, end) {
-  await calendar.events.patch({
+  const response = await calendar.events.patch({
     calendarId: CALENDAR_ID,
     eventId,
     requestBody: {
@@ -73,10 +74,12 @@ async function updateEvent(eventId, start, end) {
       },
     },
   });
+
+  return response.data;
 }
 
 // ======================================================
-// EXPORTS
+// EXPORTS (UNO SOLO)
 // ======================================================
 module.exports = {
   createEvent,
