@@ -1,11 +1,12 @@
 const { google } = require('googleapis');
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
 
 // Alcances de Google Calendar
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
 // Autenticación con Service Account
 const auth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT),
+  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
   scopes: SCOPES,
 });
 
@@ -20,7 +21,7 @@ const calendar = google.calendar({
 // ======================================================
 async function createEvent({ summary, description, start, end }) {
   const response = await calendar.events.insert({
-    calendarId: 'uses88767@gmail.com',
+    calendarId: CALENDAR_ID,
     requestBody: {
       summary,
       description,
@@ -43,7 +44,7 @@ async function createEvent({ summary, description, start, end }) {
 // ======================================================
 async function deleteEvent(eventId) {
   await calendar.events.delete({
-    calendarId: 'uses88767@gmail.com',
+    calendarId: CALENDAR_ID,
     eventId,
   });
 }
@@ -53,7 +54,7 @@ async function deleteEvent(eventId) {
 // ======================================================
 async function updateEvent(eventId, start, end) {
   await calendar.events.patch({
-    calendarId: 'uses88767@gmail.com',
+    calendarId: CALENDAR_ID,
     eventId,
     requestBody: {
       start: {
