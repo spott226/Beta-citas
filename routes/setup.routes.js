@@ -6,12 +6,13 @@ const db = require('../config/database');
 // 🔹 CREAR ADMIN INICIAL (USAR SOLO UNA VEZ)
 router.get('/init-admin', async (req, res) => {
   try {
-    // 🔹 Asegurar que la tabla exista (PRODUCCIÓN SAFE)
+    // 🔹 Asegurar que la tabla exista (ALINEADA CON EL LOGIN)
     db.prepare(`
       CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        password_hash TEXT NOT NULL,
+        active INTEGER DEFAULT 1
       )
     `).run();
 
@@ -29,16 +30,16 @@ router.get('/init-admin', async (req, res) => {
 
     // 🔹 Credenciales iniciales
     const username = 'admin';
-    const password = 'admin123'; // ⚠️ Cambiar luego
+    const password = 'admin123'; // ⚠️ Cambiar después
     const hash = await bcrypt.hash(password, 10);
 
-    // 🔹 Insertar admin
+    // 🔹 Insertar admin (COLUMNAS CORRECTAS)
     db.prepare(`
-      INSERT INTO admins (username, password)
-      VALUES (?, ?)
+      INSERT INTO admins (username, password_hash, active)
+      VALUES (?, ?, 1)
     `).run(username, hash);
 
-    // 🔹 Respuesta clara
+    // 🔹 Respuesta
     res.json({
       success: true,
       message: '✅ Admin creado correctamente',
