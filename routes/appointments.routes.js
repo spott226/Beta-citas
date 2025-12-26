@@ -56,9 +56,9 @@ const conflict = db.prepare(`
   SELECT id FROM appointments
   WHERE
     employee_id = ?
-    AND status IN ('active', 'confirmed')
-    AND datetime(start_datetime) < datetime(?)
-    AND datetime(end_datetime) > datetime(?)
+    AND status = 'confirmed'
+    AND start_datetime < ?
+    AND end_datetime > ?
 `).get(
   employee_id,
   endSQL,
