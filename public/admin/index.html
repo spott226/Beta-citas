@@ -162,7 +162,10 @@ let currentAppointmentId = null;
 
 /* Cargar citas */
 async function loadAppointments(type){
-  const res = await fetch(`/admin/appointments/${type}`);
+  const res = await fetch(`/admin/appointments/${type}`, {
+    credentials: 'include'
+  });
+
   const data = await res.json();
   appointmentsTable.innerHTML = '';
 
@@ -208,7 +211,7 @@ async function loadAppointments(type){
           <button class="btn btn-sm btn-primary mb-1"
              onclick="confirmAppointment(${a.id})">
              Asistió
-            </button>
+          </button>
 
           <button class="btn btn-sm btn-warning mb-1"
             onclick="openRescheduleModal(${a.id})">
@@ -230,7 +233,8 @@ async function confirmAppointment(id){
   if(!confirm('¿Confirmar que el cliente asistió a la cita?')) return;
 
   const res = await fetch(`/admin/appointments/${id}/confirm`, {
-    method: 'POST'
+    method: 'POST',
+    credentials: 'include'
   });
 
   if(!res.ok){
@@ -246,7 +250,8 @@ async function cancelAppointment(id){
   if(!confirm('¿Cancelar esta cita?')) return;
 
   await fetch(`/admin/appointments/${id}/cancel`, {
-    method: 'POST'
+    method: 'POST',
+    credentials: 'include'
   });
 
   loadAppointments('today');
@@ -275,6 +280,7 @@ async function saveReschedule(){
     `/admin/appointments/${currentAppointmentId}/reschedule`,
     {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         new_start_datetime: newDate
@@ -301,10 +307,13 @@ loadAppointments('today');
 let currentEmployeeId = null;
 
 async function loadEmployees(){
-  const data = await fetch('/admin/employees').then(r=>r.json());
-  employeesTable.innerHTML='';
+  const data = await fetch('/admin/employees', {
+    credentials: 'include'
+  }).then(r => r.json());
 
-  data.forEach(e=>{
+  employeesTable.innerHTML = '';
+
+  data.forEach(e => {
     employeesTable.innerHTML += `
       <tr>
         <td>${e.name}</td>
@@ -335,17 +344,23 @@ async function openServicesModal(id, name){
   currentEmployeeId = id;
   employeeModalName.innerText = name;
 
-  const services = await fetch('/admin/services').then(r=>r.json());
-  const assigned = await fetch(`/admin/employee-services/${id}`).then(r=>r.json());
+  const services = await fetch('/admin/services', {
+    credentials: 'include'
+  }).then(r => r.json());
+
+  const assigned = await fetch(`/admin/employee-services/${id}`, {
+    credentials: 'include'
+  }).then(r => r.json());
 
   servicesCheckboxes.innerHTML = '';
-  services.forEach(s=>{
+
+  services.forEach(s => {
     servicesCheckboxes.innerHTML += `
       <div class="form-check">
         <input class="form-check-input"
           type="checkbox"
           value="${s.id}"
-          ${assigned.includes(s.id) ? 'checked':''}>
+          ${assigned.includes(s.id) ? 'checked' : ''}>
         <label class="form-check-label">
           ${s.name}
         </label>
@@ -359,11 +374,12 @@ async function openServicesModal(id, name){
 
 async function saveEmployeeServices(){
   const services = [...document.querySelectorAll('#servicesCheckboxes input:checked')]
-    .map(c=>Number(c.value));
+    .map(c => Number(c.value));
 
-  await fetch(`/admin/employee-services/${currentEmployeeId}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+  await fetch(`/admin/employee-services/${currentEmployeeId}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ services })
   });
 
@@ -371,23 +387,26 @@ async function saveEmployeeServices(){
     document.getElementById('servicesModal')
   ).hide();
 }
+
 /* ===== ACTIVAR / DESACTIVAR EMPLEADA ===== */
 
-async function deactivateEmployee(id){
-  if(!confirm('¿Desactivar esta empleada?')) return;
+async function deactivateEmployee(id) {
+  if (!confirm('¿Desactivar esta empleada?')) return;
 
   await fetch(`/admin/employees/${id}/deactivate`, {
-    method: 'POST'
+    method: 'POST',
+    credentials: 'include'
   });
 
   loadEmployees();
 }
 
-async function activateEmployee(id){
-  if(!confirm('¿Activar esta empleada?')) return;
+async function activateEmployee(id) {
+  if (!confirm('¿Activar esta empleada?')) return;
 
   await fetch(`/admin/employees/${id}/activate`, {
-    method: 'POST'
+    method: 'POST',
+    credentials: 'include'
   });
 
   loadEmployees();
@@ -395,14 +414,18 @@ async function activateEmployee(id){
 
 /* ================== SERVICIOS ================== */
 async function loadServices(){
-  const data = await fetch('/admin/services').then(r=>r.json());
-  servicesTable.innerHTML='';
-  data.forEach(s=>{
+  const data = await fetch('/admin/services', {
+    credentials: 'include'
+  }).then(r => r.json());
+
+  servicesTable.innerHTML = '';
+
+  data.forEach(s => {
     servicesTable.innerHTML += `
       <tr>
         <td>${s.name}</td>
         <td>${s.duration_minutes}</td>
-        <td>${s.description||'-'}</td>
+        <td>${s.description || '-'}</td>
         <td>
           <button class="btn btn-sm btn-danger"
             onclick="deleteService(${s.id})">
@@ -411,12 +434,6 @@ async function loadServices(){
         </td>
       </tr>`;
   });
-}
-
-async function deleteService(id){
-  if(!confirm('¿Eliminar servicio?')) return;
-  await fetch(`/admin/services/${id}`,{method:'DELETE'});
-  loadServices();
 }
 
 loadAppointments('today');
