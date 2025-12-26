@@ -10,17 +10,36 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- =========================
+-- Empleados
+-- =========================
+CREATE TABLE IF NOT EXISTS empleados (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  active INTEGER DEFAULT 1
+);
+
+-- =========================
 -- Servicios del spa
 -- =========================
 CREATE TABLE IF NOT EXISTS services (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE NOT NULL,          -- 🔒 evita duplicados
+  name TEXT UNIQUE NOT NULL,
   duration_minutes INTEGER NOT NULL
 );
 
 -- =========================
--- Citas (fuente interna)
--- Google Calendar es la agenda oficial
+-- Relación empleados ↔ servicios
+-- =========================
+CREATE TABLE IF NOT EXISTS employee_services (
+  employee_id INTEGER NOT NULL,
+  service_id INTEGER NOT NULL,
+  PRIMARY KEY (employee_id, service_id),
+  FOREIGN KEY (employee_id) REFERENCES empleados(id) ON DELETE CASCADE,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+-- =========================
+-- Citas
 -- =========================
 CREATE TABLE IF NOT EXISTS appointments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,20 +47,20 @@ CREATE TABLE IF NOT EXISTS appointments (
   phone TEXT NOT NULL,
   email TEXT,
   service_id INTEGER NOT NULL,
+  employee_id INTEGER,
 
-  start_datetime TEXT NOT NULL,   -- ISO 8601
-  end_datetime TEXT NOT NULL,     -- ISO 8601
+  start_datetime TEXT NOT NULL,
+  end_datetime TEXT NOT NULL,
 
   google_event_id TEXT NOT NULL,
-
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-  FOREIGN KEY (service_id) REFERENCES services(id)
+  FOREIGN KEY (service_id) REFERENCES services(id),
+  FOREIGN KEY (employee_id) REFERENCES empleados(id)
 );
 
 -- =========================
--- Servicios iniciales del spa
--- (NO se duplican al reiniciar)
+-- Servicios iniciales
 -- =========================
 INSERT OR IGNORE INTO services (name, duration_minutes) VALUES
   ('Masaje relajante', 60),

@@ -2,35 +2,32 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-// 🔹 Directorio de la DB (PRODUCCIÓN SAFE)
-const dbDir = path.join(__dirname, '../database');
+// 🔹 Directorio de la DB (Render SAFE)
+const dbDir = path.join(process.cwd(), 'database');
 const dbPath = path.join(dbDir, 'app.db');
 
-// 🧨 RESET TEMPORAL DE DB (SOLO UNA VEZ)
-if (process.env.RESET_DB === 'true' && fs.existsSync(dbPath)) {
-  fs.unlinkSync(dbPath);
-  console.log('🧨 Base de datos eliminada por RESET_DB');
-}
-
-// 🔹 Crear carpeta si no existe (CLAVE)
+// 🔹 Crear carpeta si no existe
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
-}
-
-// 🔹 Crear archivo DB si no existe
-if (!fs.existsSync(dbPath)) {
-  fs.writeFileSync(dbPath, '');
 }
 
 // 🔹 Abrir base de datos
 const db = new Database(dbPath);
 
-// 🔹 Ejecutar init.sql
-const initSQL = fs.readFileSync(
-  path.join(__dirname, '../database/init.sql'),
-  'utf8'
-);
+// 🔹 Ejecutar init.sql SOLO si la DB está vacía
+const hasTables = db
+  .prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1"
+  )
+  .get();
 
-db.exec(initSQL);
+if (!hasTables) {
+  console.log('🛠 Inicializando base de datos...');
+  const initSQL = fs.readFileSync(
+    path.join(__dirname, '../database/init.sql'),
+    'utf8'
+  );
+  db.exec(initSQL);
+}
 
 module.exports = db;
