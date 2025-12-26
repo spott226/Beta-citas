@@ -8,8 +8,6 @@ if (
   throw new Error('❌ Faltan variables de entorno de Google Calendar');
 }
 
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
-
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   null,
@@ -17,14 +15,20 @@ const auth = new google.auth.JWT(
   ['https://www.googleapis.com/auth/calendar']
 );
 
+// 🔑 AUTORIZACIÓN EXPLÍCITA (CLAVE)
+auth.authorize();
+
 const calendar = google.calendar({
   version: 'v3',
   auth,
 });
 
+// ======================================================
+// 📅 CREAR EVENTO
+// ======================================================
 async function createEvent({ summary, description, start, end }) {
   const response = await calendar.events.insert({
-    calendarId: CALENDAR_ID,
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
     requestBody: {
       summary,
       description,
@@ -44,14 +48,14 @@ async function createEvent({ summary, description, start, end }) {
 
 async function deleteEvent(eventId) {
   await calendar.events.delete({
-    calendarId: CALENDAR_ID,
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
     eventId,
   });
 }
 
 async function updateEvent(eventId, start, end) {
   const response = await calendar.events.patch({
-    calendarId: CALENDAR_ID,
+    calendarId: process.env.GOOGLE_CALENDAR_ID,
     eventId,
     requestBody: {
       start: {
