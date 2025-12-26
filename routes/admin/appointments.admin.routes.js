@@ -153,14 +153,14 @@ router.post('/:id/reschedule', async (req, res) => {
 });
 
 // ======================================================
-// ASISTIÓ
+// ASISTIÓ (STATUS ONLY)
 // ======================================================
 router.post('/:id/confirm', (req, res) => {
   const { id } = req.params;
 
   const result = db.prepare(`
     UPDATE appointments
-    SET status = 'attended', attended = 1
+    SET status = 'attended'
     WHERE id = ?
   `).run(id);
 

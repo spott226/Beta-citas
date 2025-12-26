@@ -61,15 +61,15 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'Horario no disponible' });
     }
 
-    // Google Calendar
+    // Google Calendar (Luxon vive en el service)
     const event = await calendarService.createEvent({
       summary: service.name,
       description: `Cliente: ${name}\nTel: ${phone}\nEmail: ${email || ''}`,
-      start: startSQL, // SQL local → Luxon dentro del service
+      start: startSQL,
       end: endSQL,
     });
 
-    // Guardar cita
+    // Guardar cita (STATUS ONLY)
     db.prepare(`
       INSERT INTO appointments (
         name,
@@ -80,9 +80,8 @@ router.post('/', async (req, res) => {
         start_datetime,
         end_datetime,
         google_event_id,
-        status,
-        attended
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 0)
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')
     `).run(
       name,
       phone,
