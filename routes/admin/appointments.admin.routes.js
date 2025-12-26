@@ -206,8 +206,6 @@ router.post('/:id/reschedule', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // ======================================================
 // ✅ CONFIRMAR CITA (ASISTIÓ)
 // ======================================================
@@ -276,3 +274,5 @@ router.post('/:id/confirm', (req, res) => {
 
   res.json({ success: true });
 });
+
+module.exports = router;

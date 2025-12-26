@@ -8,15 +8,15 @@ if (
   throw new Error('❌ Faltan variables de entorno de Google Calendar');
 }
 
-const auth = new google.auth.JWT(
-  process.env.GOOGLE_CLIENT_EMAIL,
-  null,
-  Buffer.from(
+const auth = new google.auth.JWT({
+  email: process.env.GOOGLE_CLIENT_EMAIL,
+  key: Buffer.from(
     process.env.GOOGLE_PRIVATE_KEY_BASE64,
     'base64'
   ).toString('utf8'),
-  ['https://www.googleapis.com/auth/calendar']
-);
+  scopes: ['https://www.googleapis.com/auth/calendar'],
+  projectId: process.env.GOOGLE_PROJECT_ID,
+});
 
 const calendar = google.calendar({
   version: 'v3',
