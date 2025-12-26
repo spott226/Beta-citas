@@ -35,13 +35,13 @@ router.get('/', (req, res) => {
   const start = new Date(start_datetime);
   const end = new Date(start.getTime() + service.duration_minutes * 60000);
 
-  // 🔑 FECHAS EN FORMATO LOCAL (CLAVE)
+  // 🔑 FECHAS EN FORMATO LOCAL
   const startSQL = toLocalSQLDate(start);
   const endSQL = toLocalSQLDate(end);
 
   const rows = db.prepare(`
     SELECT e.id, e.name
-    FROM employees e
+    FROM empleados e
     JOIN employee_services es
       ON e.id = es.employee_id
     WHERE
