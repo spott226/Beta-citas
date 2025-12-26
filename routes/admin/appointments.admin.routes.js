@@ -3,102 +3,72 @@ const router = express.Router();
 const db = require('../../config/database');
 const calendarService = require('../../services/calendar.service');
 
-// Helper para formatear hora
-function formatTime(dateStr) {
-  return new Date(dateStr).toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+// ===============================
+// Helper fecha SQL LOCAL MX
+// ===============================
+function toLocalSQLDate(date) {
+  const pad = n => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
 }
 
 // ======================================================
-// 🔹 LISTADOS
+// LISTADOS (EXCLUYE CANCELLED)
 // ======================================================
 
-// 🔹 HOY
 router.get('/today', (req, res) => {
   const rows = db.prepare(`
-    SELECT 
-      a.*,
-      s.name AS service,
-      e.name AS employee
+    SELECT a.*, s.name AS service, e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
     LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE date(a.start_datetime) = date('now','localtime')
-      AND a.status != 'cancelada'
+      AND a.status != 'cancelled'
     ORDER BY a.start_datetime
   `).all();
 
   res.json(rows);
 });
 
-// 🔹 SEMANA
 router.get('/week', (req, res) => {
   const rows = db.prepare(`
-    SELECT 
-      a.*,
-      s.name AS service,
-      e.name AS employee
+    SELECT a.*, s.name AS service, e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
     LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE date(a.start_datetime)
       BETWEEN date('now','localtime')
       AND date('now','localtime','+7 days')
-      AND a.status != 'cancelada'
+      AND a.status != 'cancelled'
     ORDER BY a.start_datetime
   `).all();
 
   res.json(rows);
 });
 
-// 🔹 MES
 router.get('/month', (req, res) => {
   const rows = db.prepare(`
-    SELECT 
-      a.*,
-      s.name AS service,
-      e.name AS employee
+    SELECT a.*, s.name AS service, e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
     LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE strftime('%Y-%m', a.start_datetime)
       = strftime('%Y-%m', 'now','localtime')
-      AND a.status != 'cancelada'
+      AND a.status != 'cancelled'
     ORDER BY a.start_datetime
   `).all();
 
   res.json(rows);
 });
 
-// 🔹 PASADAS
-router.get('/past', (req, res) => {
-  const rows = db.prepare(`
-    SELECT 
-      a.*,
-      s.name AS service,
-      e.name AS employee
-    FROM appointments a
-    JOIN services s ON a.service_id = s.id
-    LEFT JOIN empleados e ON a.employee_id = e.id
-    WHERE datetime(a.end_datetime) < datetime('now','localtime')
-    ORDER BY a.start_datetime DESC
-  `).all();
-
-  res.json(rows);
-});
-
 // ======================================================
-// ❌ CANCELAR CITA
+// CANCELAR
 // ======================================================
 router.post('/:id/cancel', async (req, res) => {
   const { id } = req.params;
 
   const appointment = db.prepare(`
-    SELECT google_event_id
-    FROM appointments
-    WHERE id = ?
+    SELECT google_event_id FROM appointments WHERE id = ?
   `).get(id);
 
   if (!appointment) {
@@ -106,41 +76,33 @@ router.post('/:id/cancel', async (req, res) => {
   }
 
   try {
-    // Eliminar evento de Google Calendar
     if (appointment.google_event_id) {
       await calendarService.deleteEvent(appointment.google_event_id);
     }
 
-    // Marcar como cancelada
     db.prepare(`
       UPDATE appointments
-      SET status = 'cancelada'
+      SET status = 'cancelled'
       WHERE id = ?
     `).run(id);
 
     res.json({ success: true });
 
   } catch (error) {
-    console.error('Error cancelando cita:', error.message);
-    res.status(500).json({ error: 'Error cancelando la cita' });
+    console.error('Error cancelando cita:', error);
+    res.status(500).json({ error: 'Error cancelando cita' });
   }
 });
 
 // ======================================================
-// 🔁 REAGENDAR CITA
+// REAGENDAR
 // ======================================================
 router.post('/:id/reschedule', async (req, res) => {
   const { id } = req.params;
   const { new_start_datetime } = req.body;
 
-  if (!new_start_datetime) {
-    return res.status(400).json({ error: 'Nueva fecha requerida' });
-  }
-
   const appointment = db.prepare(`
-    SELECT *
-    FROM appointments
-    WHERE id = ?
+    SELECT * FROM appointments WHERE id = ?
   `).get(id);
 
   if (!appointment) {
@@ -148,128 +110,62 @@ router.post('/:id/reschedule', async (req, res) => {
   }
 
   const service = db.prepare(`
-    SELECT duration_minutes
-    FROM services
-    WHERE id = ?
+    SELECT duration_minutes FROM services WHERE id = ?
   `).get(appointment.service_id);
 
   const start = new Date(new_start_datetime);
   const end = new Date(start.getTime() + service.duration_minutes * 60000);
 
-  try {
-    // Validar empalme con la MISMA EMPLEADA
-    const conflict = db.prepare(`
-      SELECT id
-      FROM appointments
-      WHERE id != ?
-        AND employee_id = ?
-        AND status != 'cancelada'
-        AND datetime(start_datetime) < datetime(?)
-        AND datetime(end_datetime) > datetime(?)
-    `).get(
-      id,
-      appointment.employee_id,
-      end.toISOString(),
-      start.toISOString()
-    );
+  const startSQL = toLocalSQLDate(start);
+  const endSQL   = toLocalSQLDate(end);
 
-    if (conflict) {
-      return res.status(409).json({ error: 'Horario no disponible' });
-    }
+  const conflict = db.prepare(`
+    SELECT id FROM appointments
+    WHERE id != ?
+      AND employee_id = ?
+      AND status = 'confirmed'
+      AND start_datetime < ?
+      AND end_datetime > ?
+  `).get(
+    id,
+    appointment.employee_id,
+    endSQL,
+    startSQL
+  );
 
-    // Actualizar Google Calendar
-    await calendarService.updateEvent(
-      appointment.google_event_id,
-      start.toISOString(),
-      end.toISOString()
-    );
-
-    // Actualizar SQLite
-    db.prepare(`
-      UPDATE appointments
-      SET
-        start_datetime = ?,
-        end_datetime = ?,
-        status = 'reagendada'
-      WHERE id = ?
-    `).run(
-      start.toISOString(),
-      end.toISOString(),
-      id
-    );
-
-    res.json({ success: true });
-
-  } catch (error) {
-    console.error('Error reagendando cita:', error.message);
-    res.status(500).json({ error: 'Error reagendando la cita' });
+  if (conflict) {
+    return res.status(409).json({ error: 'Horario no disponible' });
   }
+
+  await calendarService.updateEvent(
+    appointment.google_event_id,
+    startSQL,
+    endSQL
+  );
+
+  db.prepare(`
+    UPDATE appointments
+    SET start_datetime = ?, end_datetime = ?, status = 'rescheduled'
+    WHERE id = ?
+  `).run(startSQL, endSQL, id);
+
+  res.json({ success: true });
 });
 
 // ======================================================
-// ✅ CONFIRMAR CITA (ASISTIÓ)
+// ASISTIÓ
 // ======================================================
 router.post('/:id/confirm', (req, res) => {
   const { id } = req.params;
 
-  const appointment = db.prepare(`
-    SELECT *
-    FROM appointments
-    WHERE id = ?
-  `).get(id);
-
-  if (!appointment) {
-    return res.status(404).json({ error: 'Cita no encontrada' });
-  }
-
-  // 1️⃣ Marcar cita como atendida
-  db.prepare(`
+  const result = db.prepare(`
     UPDATE appointments
-    SET attended = 1, status = 'confirmada'
+    SET status = 'attended', attended = 1
     WHERE id = ?
   `).run(id);
 
-  // 2️⃣ Buscar cliente por teléfono
-  const existingClient = db.prepare(`
-    SELECT id
-    FROM clientes
-    WHERE phone = ?
-  `).get(appointment.phone);
-
-  // 3️⃣ SI NO EXISTE → INSERT
-  if (!existingClient) {
-    db.prepare(`
-      INSERT INTO clientes (
-        name,
-        phone,
-        email,
-        last_visit,
-        visits_count,
-        created_at
-      ) VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-    `).run(
-      appointment.name,
-      appointment.phone,
-      appointment.email || null,
-      appointment.start_datetime
-    );
-  } 
-  // 4️⃣ SI YA EXISTE → UPDATE + SUMA VISITA
-  else {
-    db.prepare(`
-      UPDATE clientes
-      SET
-        name = ?,
-        email = ?,
-        last_visit = ?,
-        visits_count = visits_count + 1
-      WHERE phone = ?
-    `).run(
-      appointment.name,
-      appointment.email || null,
-      appointment.start_datetime,
-      appointment.phone
-    );
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Cita no encontrada' });
   }
 
   res.json({ success: true });
