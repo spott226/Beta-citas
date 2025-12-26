@@ -1,9 +1,9 @@
 PRAGMA foreign_keys = ON;
 
 -- =========================
--- Usuarios administrador
+-- Administradores
 -- =========================
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS administradores (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL
@@ -19,16 +19,27 @@ CREATE TABLE IF NOT EXISTS empleados (
 );
 
 -- =========================
--- Servicios del spa
+-- Clientes
+-- =========================
+CREATE TABLE IF NOT EXISTS clientes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT
+);
+
+-- =========================
+-- Servicios
 -- =========================
 CREATE TABLE IF NOT EXISTS services (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT UNIQUE NOT NULL,
+  description TEXT,
   duration_minutes INTEGER NOT NULL
 );
 
 -- =========================
--- Relación empleados ↔ servicios
+-- Empleados ↔ Servicios
 -- =========================
 CREATE TABLE IF NOT EXISTS employee_services (
   employee_id INTEGER NOT NULL,
@@ -46,13 +57,14 @@ CREATE TABLE IF NOT EXISTS appointments (
   name TEXT NOT NULL,
   phone TEXT NOT NULL,
   email TEXT,
+
   service_id INTEGER NOT NULL,
   employee_id INTEGER,
 
   start_datetime TEXT NOT NULL,
   end_datetime TEXT NOT NULL,
 
-  google_event_id TEXT NOT NULL,
+  google_event_id TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
   FOREIGN KEY (service_id) REFERENCES services(id),
@@ -62,7 +74,7 @@ CREATE TABLE IF NOT EXISTS appointments (
 -- =========================
 -- Servicios iniciales
 -- =========================
-INSERT OR IGNORE INTO services (name, duration_minutes) VALUES
-  ('Masaje relajante', 60),
-  ('Facial premium', 90),
-  ('Ritual spa completo', 120);
+INSERT OR IGNORE INTO services (name, description, duration_minutes) VALUES
+  ('Masaje relajante', 'Masaje corporal completo', 60),
+  ('Facial premium', 'Tratamiento facial avanzado', 90),
+  ('Ritual spa completo', 'Experiencia integral de spa', 120);

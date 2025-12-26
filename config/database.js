@@ -11,18 +11,37 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
+// 🧨 RESET CONTROLADO (SOLO SI RESET_DB=true)
+if (process.env.RESET_DB === 'true' && fs.existsSync(dbPath)) {
+  fs.unlinkSync(dbPath);
+  console.log('🧨 Base de datos eliminada por RESET_DB');
+}
+
 // 🔹 Abrir base de datos
 const db = new Database(dbPath);
 
-// 🔹 Ejecutar init.sql SOLO si la DB está vacía
-const hasTables = db
-  .prepare(
-    "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1"
-  )
-  .get();
+// 🔹 Ejecutar init.sql SI NO EXISTEN LAS TABLAS CLAVE
+const requiredTables = [
+  'administradores',
+  'empleados',
+  'clientes',
+  'services',
+  'appointments'
+];
 
-if (!hasTables) {
-  console.log('🛠 Inicializando base de datos...');
+const existingTables = db
+  .prepare(
+    "SELECT name FROM sqlite_master WHERE type='table'"
+  )
+  .all()
+  .map(t => t.name);
+
+const missingTables = requiredTables.filter(
+  t => !existingTables.includes(t)
+);
+
+if (missingTables.length) {
+  console.log('🛠 Inicializando base de datos:', missingTables);
   const initSQL = fs.readFileSync(
     path.join(__dirname, '../database/init.sql'),
     'utf8'
