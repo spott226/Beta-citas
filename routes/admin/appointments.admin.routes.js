@@ -24,7 +24,7 @@ router.get('/today', (req, res) => {
       e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
-    LEFT JOIN employees e ON a.employee_id = e.id
+    LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE date(a.start_datetime) = date('now','localtime')
       AND a.status != 'cancelada'
     ORDER BY a.start_datetime
@@ -42,7 +42,7 @@ router.get('/week', (req, res) => {
       e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
-    LEFT JOIN employees e ON a.employee_id = e.id
+    LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE date(a.start_datetime)
       BETWEEN date('now','localtime')
       AND date('now','localtime','+7 days')
@@ -62,7 +62,7 @@ router.get('/month', (req, res) => {
       e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
-    LEFT JOIN employees e ON a.employee_id = e.id
+    LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE strftime('%Y-%m', a.start_datetime)
       = strftime('%Y-%m', 'now','localtime')
       AND a.status != 'cancelada'
@@ -81,7 +81,7 @@ router.get('/past', (req, res) => {
       e.name AS employee
     FROM appointments a
     JOIN services s ON a.service_id = s.id
-    LEFT JOIN employees e ON a.employee_id = e.id
+    LEFT JOIN empleados e ON a.employee_id = e.id
     WHERE datetime(a.end_datetime) < datetime('now','localtime')
     ORDER BY a.start_datetime DESC
   `).all();
@@ -234,14 +234,14 @@ router.post('/:id/confirm', (req, res) => {
   // 2️⃣ Buscar cliente por teléfono
   const existingClient = db.prepare(`
     SELECT id
-    FROM clients
+    FROM clientes
     WHERE phone = ?
   `).get(appointment.phone);
 
   // 3️⃣ SI NO EXISTE → INSERT
   if (!existingClient) {
     db.prepare(`
-      INSERT INTO clients (
+      INSERT INTO clientes (
         name,
         phone,
         email,
@@ -259,7 +259,7 @@ router.post('/:id/confirm', (req, res) => {
   // 4️⃣ SI YA EXISTE → UPDATE + SUMA VISITA
   else {
     db.prepare(`
-      UPDATE clients
+      UPDATE clientes
       SET
         name = ?,
         email = ?,

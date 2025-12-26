@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
       birthday,
       visits_count,
       last_visit
-    FROM clients
+    FROM clientes
     ORDER BY last_visit DESC
   `).all();
 
