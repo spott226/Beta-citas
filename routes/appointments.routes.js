@@ -74,12 +74,12 @@ if (conflict) {
 
     // 📅 Google Calendar
     const event = await calendarService.createEvent({
-      summary: `${service.name}`,
-      description:
-        `Cliente: ${name}\nTeléfono: ${phone}\nEmail: ${email}`,
-      start: start.toISOString(),
-      end: end.toISOString(),
-    });
+  summary: `${service.name}`,
+  description:
+    `Cliente: ${name}\nTeléfono: ${phone}\nEmail: ${email}`,
+  start: startSQL,
+  end: endSQL,
+});
 
     if (!event || !event.id) {
   throw new Error('Evento de Google no válido');
@@ -87,26 +87,27 @@ if (conflict) {
 
     // 💾 Guardar cita
     db.prepare(`
-      INSERT INTO appointments (
-        name,
-        phone,
-        email,
-        service_id,
-        employee_id,
-        start_datetime,
-        end_datetime,
-        google_event_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      name,
-      phone,
-      email,
-      service_id,
-      employee_id,
-      startSQL,
-      endSQL,
-      event.id
-    );
+  INSERT INTO appointments (
+    name,
+    phone,
+    email,
+    service_id,
+    employee_id,
+    start_datetime,
+    end_datetime,
+    google_event_id,
+    status
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')
+`).run(
+  name,
+  phone,
+  email,
+  service_id,
+  employee_id,
+  startSQL,
+  endSQL,
+  event.id
+);
 
     res.json({
       success: true,
