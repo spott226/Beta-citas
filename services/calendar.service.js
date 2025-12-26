@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { DateTime } = require('luxon');
 
 // ===============================
 // VALIDACIÓN DE ENV
@@ -33,13 +34,18 @@ const calendar = google.calendar({
 });
 
 // ===============================
-// CREATE EVENT
+// CREATE EVENT (FIX TIMEZONE)
 // ===============================
 async function createEvent({ summary, description, start, end }) {
   try {
-    // 👉 CONVERSIÓN CORRECTA A ISO
-    const startISO = new Date(start).toISOString();
-    const endISO   = new Date(end).toISOString();
+    // 🔥 CONVERSIÓN CORRECTA CON OFFSET MÉXICO
+    const startISO = DateTime
+      .fromSQL(start, { zone: 'America/Mexico_City' })
+      .toISO({ includeOffset: true });
+
+    const endISO = DateTime
+      .fromSQL(end, { zone: 'America/Mexico_City' })
+      .toISO({ includeOffset: true });
 
     const res = await calendar.events.insert({
       calendarId: process.env.GOOGLE_CALENDAR_ID,
@@ -47,14 +53,14 @@ async function createEvent({ summary, description, start, end }) {
         summary,
         description,
         start: { dateTime: startISO },
-        end:   { dateTime: endISO },
+        end: { dateTime: endISO },
       },
     });
 
     return res.data;
 
   } catch (error) {
-    console.error('❌ Error creando evento en Google Calendar:', error.message);
+    console.error('❌ Error creando evento en Google Calendar:', error);
     throw error;
   }
 }
