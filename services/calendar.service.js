@@ -2,7 +2,7 @@ const { google } = require('googleapis');
 
 if (
   !process.env.GOOGLE_CLIENT_EMAIL ||
-  !process.env.GOOGLE_PRIVATE_KEY ||
+  !process.env.GOOGLE_PRIVATE_KEY_BASE64 ||
   !process.env.GOOGLE_CALENDAR_ID
 ) {
   throw new Error('❌ Faltan variables de entorno de Google Calendar');
@@ -11,7 +11,10 @@ if (
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   null,
-  process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  Buffer.from(
+    process.env.GOOGLE_PRIVATE_KEY_BASE64,
+    'base64'
+  ).toString('utf8'),
   ['https://www.googleapis.com/auth/calendar']
 );
 
