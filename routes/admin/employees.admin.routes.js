@@ -6,7 +6,7 @@ const db = require('../../config/database');
 router.get('/', (req, res) => {
   const rows = db.prepare(`
     SELECT id, name, active
-    FROM employees
+    FROM empleados
     ORDER BY name
   `).all();
 
@@ -25,7 +25,7 @@ router.post('/', (req, res) => {
   }
 
   db.prepare(`
-    INSERT INTO employees (name, active)
+    INSERT INTO empleados (name, active)
     VALUES (?, 1)
   `).run(name);
 
@@ -40,7 +40,7 @@ router.post('/:id/deactivate', (req, res) => {
   const { id } = req.params;
 
   db.prepare(`
-    UPDATE employees
+    UPDATE empleados
     SET active = 0
     WHERE id = ?
   `).run(id);
@@ -56,7 +56,7 @@ router.post('/:id/activate', (req, res) => {
   const { id } = req.params;
 
   db.prepare(`
-    UPDATE employees
+    UPDATE empleados
     SET active = 1
     WHERE id = ?
   `).run(id);
