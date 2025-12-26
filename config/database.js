@@ -20,19 +20,20 @@ if (process.env.RESET_DB === 'true' && fs.existsSync(dbPath)) {
 // 🔹 Abrir base de datos
 const db = new Database(dbPath);
 
-// 🔹 Ejecutar init.sql SI NO EXISTEN LAS TABLAS CLAVE
+// ==========================
+// 1️⃣ CREAR TABLAS SI FALTAN
+// ==========================
 const requiredTables = [
   'administradores',
   'empleados',
   'clientes',
   'services',
-  'appointments'
+  'appointments',
+  'employee_services'
 ];
 
 const existingTables = db
-  .prepare(
-    "SELECT name FROM sqlite_master WHERE type='table'"
-  )
+  .prepare("SELECT name FROM sqlite_master WHERE type='table'")
   .all()
   .map(t => t.name);
 
@@ -48,5 +49,28 @@ if (missingTables.length) {
   );
   db.exec(initSQL);
 }
+
+// ==========================
+// 2️⃣ MIGRACIONES POR COLUMNAS
+// ==========================
+
+// 🔹 appointments.status
+const appointmentColumns = db
+  .prepare(`PRAGMA table_info(appointments)`)
+  .all()
+  .map(c => c.name);
+
+if (!appointmentColumns.includes('status')) {
+  console.log('🛠 Agregando columna appointments.status');
+  db.prepare(`
+    ALTER TABLE appointments
+    ADD COLUMN status TEXT DEFAULT 'pending'
+  `).run();
+}
+
+// ==========================
+// 3️⃣ FOREIGN KEYS ACTIVAS
+// ==========================
+db.prepare(`PRAGMA foreign_keys = ON`).run();
 
 module.exports = db;
